@@ -1,0 +1,92 @@
+public class HuffmanEncodingWithHeap {
+
+    private static final int ASCII_SIZE = 256;
+    private static final char LEFT = '0';
+    private static final char RIGHT = '1';
+    private static final String EMPTY_STRING = "";
+    private static final int BITS_PER_BYTE = 8;
+
+    private static int[] countFrequency(String message) {
+        int[] frequencies = new int[ASCII_SIZE];
+        if (message != null) {
+            for (int i = 0; i < message.length(); i++) {
+                frequencies[(int) message.charAt(i)]++;
+            }
+        }
+        return frequencies;
+    }
+
+    private static MinHeap<HuffmanNode> buildForest(int[] frequencies) {
+        MinHeap<HuffmanNode> forest = new MinHeap<>();
+        for (int asciiCode = 0; asciiCode < frequencies.length; asciiCode++) {
+            if (frequencies[asciiCode] > 0) {
+                forest.insert(new HuffmanNode((char) asciiCode, frequencies[asciiCode]));
+            }
+        }
+        return forest;
+    }
+
+    private static HuffmanNode buildTree(MinHeap<HuffmanNode> forest) {
+        while (forest.size() > 1) {
+            HuffmanNode firstNode = forest.removeMin();
+            HuffmanNode secondNode = forest.removeMin();
+            HuffmanNode combinedNode = new HuffmanNode(firstNode.getFrequency() + secondNode.getFrequency());
+            combinedNode.setLeft(firstNode);
+            combinedNode.setRight(secondNode);
+            forest.insert(combinedNode);
+        }
+        return forest.removeMin();
+    }
+
+    private static void createEncodingTable(HuffmanNode node, String code, String[] codes) {
+        if (node != null) {
+            if ((int) node.getSymbol() != 0) {
+                codes[(int) node.getSymbol()] = code;
+            } else {
+                createEncodingTable(node.getLeft(), code + LEFT, codes);
+                createEncodingTable(node.getRight(), code + RIGHT, codes);
+            }
+        }
+    }
+
+    private static String[] createEncodingTable(HuffmanNode node) {
+        String[] codes = new String[ASCII_SIZE];
+        createEncodingTable(node, EMPTY_STRING, codes);
+        return codes;
+    }
+
+    private static void displayCodes(String[] codes) {
+        for (int i = 0; i < codes.length; i++) {
+            if (codes[i] != null) {
+                System.out.printf("\n '%s' --> %-10s", (char) i, codes[i]);
+            }
+        }
+    }
+
+    private static int computeCompressionLength(String message, String[] codes) {
+        int compressionLength = 0;
+        for (int i = 0; i < message.length(); i++) {
+            compressionLength += codes[(int) message.charAt(i)].length();
+        }
+        return compressionLength;
+    }
+
+    private static void reportEfficiency(String message, String[] codes) {
+        System.out.printf("\nCompressed message requires %d bits versus %d bits for ASCII encoding.\n",
+                computeCompressionLength(message, codes), message.length() * BITS_PER_BYTE);
+    }
+
+    static void encode(String message) {
+        int[] frequencies = countFrequency(message);
+        MinHeap<HuffmanNode> forest = buildForest(frequencies);
+        HuffmanNode huffmanTreeRoot = buildTree(forest);
+        String[] codes = createEncodingTable(huffmanTreeRoot);
+        displayCodes(codes);
+        reportEfficiency(message, codes);
+    }
+
+    public static void main(String[] args) {
+        String message = "now is the winter of our discontent made glorious by this son of york and all the clouds that lourd over our house in the deep bossom of the ocean lay";
+        encode(message);
+    }
+}
